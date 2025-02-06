@@ -31,7 +31,7 @@ export async function generateUserBasedCard(users) {
     // Create context string from user data
     const userContext = selectedUsers.map(user => `
       Username: ${user.username}
-      Description: ${user.description || 'A mysterious creator'}
+      Description: ${user.description}
       Twitter: ${user.twitter || 'None'}
       Discord: ${user.discord_username || 'None'}
     `).join('\n\n');
@@ -43,7 +43,7 @@ export async function generateUserBasedCard(users) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `You are a community spirit card generator. Analyze these community members and create a spirit card that represents their collective energy and creative traits:
+        prompt: `You are a community card generator. Analyze these community members and create a card that represents their collective creative traits:
 
 ${userContext}
 
@@ -60,8 +60,8 @@ interface Response {
 Example response (generate something completely different):
 {
   "name": "Creativox",
-  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative energy in its wake.",
-  "type": "Light/Celestial", 
+  "description": "A rare community member formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative through it use of AI and Nature.",
+  "type": "Tech/Nature", 
   "height": "1.7m",
   "weight": "42kg"
 }`,
