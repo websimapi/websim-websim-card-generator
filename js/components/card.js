@@ -127,14 +127,14 @@ export async function loadCardToMain(cardData) {
   
   // Add click handler with submenu toggle and auto-flip after mounting
   card.addEventListener('click', (e) => {
-    const cardInner = e.currentTarget.querySelector('.card-inner');
+    const cardInner = card.querySelector('.card-inner');
     cardInner.classList.toggle('flipped');
     
     // Show/hide submenu based on card flip state
     if (!cardInner.classList.contains('flipped')) {
       setTimeout(() => {
         submenu.classList.remove('hidden');
-      }, 400); // Half the flip animation duration
+      }, 400);
     } else {
       submenu.classList.add('hidden');
     }

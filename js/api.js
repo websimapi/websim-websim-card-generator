@@ -25,16 +25,24 @@ export async function getFollowsData() {
 
 export async function generateUserBasedCard(users) {
   try {
-    // Get random users to feature
-    const selectedUsers = users.sort(() => 0.5 - Math.random()).slice(0, 3);
-    
-    // Create context string from user data
-    const userContext = selectedUsers.map(user => `
-      Username: ${user.username}
-      Description: ${user.description}
-      Twitter: ${user.twitter || 'None'}
-      Discord: ${user.discord_username || 'None'}
-    `).join('\n\n');
+    // Select one random user from the followers/following list
+    const randomUser = users[Math.floor(Math.random() * users.length)];
+
+    // Fetch recent projects for the selected user
+    const projectsResponse = await fetch(`/api/v1/users/${randomUser.username}/projects`);
+    const projectsData = await projectsResponse.json();
+    // Assume the response contains a "projects" array
+    const recentProjects = projectsData.projects ? projectsData.projects.slice(0, 2) : [];
+
+    // Construct a context string that includes user profile and recent project info
+    const userContext = `
+Username: ${randomUser.username}
+Description: ${randomUser.description || 'N/A'}
+Twitter: ${randomUser.twitter || 'None'}
+Discord: ${randomUser.discord_username || 'None'}
+Recent Projects:
+${recentProjects.map(project => `Title: ${project.title || 'Untitled'}, Description: ${project.description || 'No description available'}`).join('\n')}
+    `.trim();
 
     const response = await fetch('/api/ai_completion', {
       method: 'POST',
@@ -43,11 +51,7 @@ export async function generateUserBasedCard(users) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `You are a community card generator. Analyze these community members and create a card that represents their collective creative traits:
-
-${userContext}
-
-Create a completely unique community spirit card based on the essence and patterns you observe in these members' traits and activities. The card should feel mystical and interconnected with the community's creative energy.
+        prompt: `Based on the following user profile and their recent projects details, generate a creative card description that captures the community's essence. Provide a meaningful name derived from the user's characteristics and recent contributions, a type (representing personality or elemental traits), height, weight, and a rich description that highlights their creative impact and project influence.
 
 interface Response {
   name: string;
@@ -60,12 +64,16 @@ interface Response {
 Example response (generate something completely different):
 {
   "name": "Creativox",
-  "description": "A rare community member formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative through it use of AI and Nature.",
-  "type": "Tech/Nature", 
+  "description": "An innovative personality inspired by breakthroughs in digital art and collaborative tech projects like 'Digital Dawn'. This card reflects a blend of creativity, resilience, and community contribution.",
+  "type": "Light/Celestial",
   "height": "1.7m",
   "weight": "42kg"
-}`,
-        data: userContext
+}
+
+User Context:
+${userContext}
+`,
+        data: JSON.stringify(randomUser)
       }),
     });
     
@@ -92,16 +100,16 @@ export async function generateCardImage(description) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `Generate a unique image URL for an abstract representation based on this description: "${description}". The image should symbolize community spirit and user traits rather than pokemon-style creatures. Return a URL to an image that matches the description.
+        prompt: `Generate a unique image URL for an abstract representation based on this description: "${description}". The image should symbolize community spirit and user traits rather than traditional characters. Return a URL to an image that matches the description.
 
-        interface Response {
-          imageUrl: string;
-        }
+interface Response {
+  imageUrl: string;
+}
 
-        Example response (generate something different):
-        {
-          "imageUrl": "https://example.com/community-spirit-image.jpg"
-        }`,
+Example response (generate something different):
+{
+  "imageUrl": "https://example.com/community-spirit-image.jpg"
+}`,
         data: description
       }),
     });

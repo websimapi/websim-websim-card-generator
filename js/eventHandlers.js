@@ -8,10 +8,9 @@ export function setupEventListeners() {
   const initialCard = document.querySelector('.card');
   if (initialCard) {
     initialCard.addEventListener('click', async (e) => {
-      // Prevent multiple clicks during locate
       if (initialCard.classList.contains('locating')) return;
       
-      // Start locate animation
+      // Start locate animation with glow effect on card and button
       initialCard.classList.add('locating');
       const generateBtn = document.getElementById('generateBtn');
       generateBtn.classList.add('locating');
@@ -19,8 +18,14 @@ export function setupEventListeners() {
       try {
         // Wait for card generation
         await generateCard();
-        
-        // After generation, flip the card
+        // If an image exists in the new card, wait until it loads before flipping
+        const cardImage = document.querySelector('.card .card-image-container img');
+        if (cardImage && !cardImage.complete) {
+          await new Promise(resolve => {
+            cardImage.addEventListener('load', resolve, { once: true });
+          });
+        }
+        // After generation and image load, flip the card
         const cardInner = document.querySelector('.card-inner');
         if (cardInner) {
           cardInner.classList.toggle('flipped');
@@ -28,7 +33,6 @@ export function setupEventListeners() {
       } catch (error) {
         console.error('Error during initial card locate:', error);
       } finally {
-        // Remove locate animation
         initialCard.classList.remove('locating');
         generateBtn.classList.remove('locating');
       }

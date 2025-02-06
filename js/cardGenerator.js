@@ -75,13 +75,13 @@ export async function generateCard() {
     </div>
     <div class="description-box">
       <div class="description-title">Description</div>
-      <div class="full-description">Loading community spirit card...</div>
+      <div class="full-description">Loading community card...</div>
     </div>
   `;
   
   cardContainer.appendChild(submenu);
 
-  // Get user data and generate card description
+  // Get user data and generate card description based on recent project context
   const users = await getFollowsData();
   const cardData = await generateUserBasedCard(users);
 
@@ -95,7 +95,7 @@ export async function generateCard() {
   submenu.querySelector('.full-description').textContent = cardData.description;
 
   // Generate image based on description
-  const imageUrl = await generateCardImage(`${cardData.description} - ${cardData.name} community spirit card`);
+  const imageUrl = await generateCardImage(`${cardData.description} - ${cardData.name} community card`);
 
   // Create the cardData object early
   const newCardData = {
@@ -118,7 +118,7 @@ export async function generateCard() {
     // Add load and error event listeners
     cardImage.addEventListener('load', async function() {
       const actualSrc = this.currentSrc || this.src;
-      // Only show and save if the source isn't our text string
+      // Only show and save if the source isn't our placeholder string
       if (!actualSrc.includes('cartoon')) {
         this.classList.remove('hidden');
         

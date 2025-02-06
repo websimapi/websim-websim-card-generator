@@ -23,11 +23,12 @@ export function getTypeIcon(type) {
     </svg>`,
     
     'Air': `<svg viewBox="0 0 512 512">
-      <path fill="currentColor" d="M256 96l-96 96v128l96 96 96-96V192l-96-96zm0 288l-64-64V192l64-64 64 64v128l-64 64zm32-160c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32z"/>
+      <path fill="currentColor" d="M256 96l-96 96v128l96 96 96-96V192l-96-96zm0 288l-96 96 96 96 96-96L256 32zm0-256l-64 64-64 64 64 64 64-64z"/>
+      <path fill="currentColor" d="M256 160c0 26.5-21.5 48-48 48s-48-21.5-48-48 21.5-48 48-48 48 21.5 48 48z"/>
     </svg>`,
     
     'Sound': `<svg viewBox="0 0 512 512">
-      <path fill="currentColor" d="M256 96l-96 96v128l96 96 96-96V192l-96-96zm0 288l-64-64V192l64-64 64 64v128l-64 64zm32-160c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32z"/>
+      <path fill="currentColor" d="M256 96l-96 96v128l96 96 96-96V192l-96-96zm0 288l-64-64V192l64-64 64 64v128l-64 64z"/>
     </svg>`,
     
     'Nature': `<svg viewBox="0 0 512 512">
@@ -67,6 +68,7 @@ export function getTypeIcon(type) {
     'Steel': `<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 64c-88.4 0-160 71.6-160 160s71.6 160 160 160 160-71.6 160-160S344.4 64 256 64zm80 160c0 44.2-35.8 80-80 80s-80-35.8-80-80 35.8-80 80-80 80 35.8 80 80zm-160 0c0 44.2-35.8 80-80 80s-80-35.8-80-80 35.8-80 80-80 80 35.8 80 80z"/></svg>`,
     
     'Fairy': `<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 64l64 64-64 64-64-64 64-64zm0 384l64-64-64-64-64 64 64 64zm0-192l64 64-64 64-64-64 64-64zm-128-64l64 64-64 64-64-64 64-64zm256 0l64 64-64 64-64-64 64-64z"/></svg>`,
+    
     'Plant': `<svg viewBox="0 0 512 512">
       <defs>
         <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -89,19 +91,14 @@ export function getTypeIcon(type) {
     </svg>`,
     
     'Flora': `<svg viewBox="0 0 512 512">
-      <path fill="currentColor" d="M64 96c0-35.3 28.7-64 64-64h256c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H128c-35.3 0-64-28.7-64-64V96zm128 64c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64c-17.7 0-32 14.3-32 32zm128 128c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64c-17.7 0-32 14.3-32 32zm-128 128c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64c-17.7 0-32 14.3-32 32z"/>
-      <path fill="currentColor" d="M320 160c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32zm-208 0c17.7 0 32 14.3 32 32s-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32z"/>
+      <path fill="currentColor" d="M64 96c0-35.3 28.7-64 64-64h256c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H128c-35.3 0-64-28.7-64-64V96zm128 64c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64c-17.7 0-32 14.3-32 32zm128 128c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64c-17.7 0-32 14.3-32 32z"/>
     </svg>`,
     
     'Elemental': `<svg viewBox="0 0 512 512">
       <path fill="currentColor" d="M256 32l-96 96v128l96 96 96-96V192l-96-96zm0 288l-64-64V192l64-64 64 64v128l-64 64zm32-160c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32z"/>
       <path fill="currentColor" d="M192 192l64-64 64 64-64 64-64-64zm32 0c0 17.7-14.3 32-32 32s-32-14.3-32-32 14.3-32 32-32 32 14.3 32 32z"/>
-      <circle cx="256" cy="256" r="24" fill="currentColor"/>
-      <circle cx="256" cy="192" r="16" fill="currentColor"/>
-      <circle cx="256" cy="320" r="16" fill="currentColor"/>
-      <circle cx="192" cy="256" r="16" fill="currentColor"/>
-      <circle cx="320" cy="256" r="16" fill="currentColor"/>
     </svg>`,
+    
     'Celestial': `<svg viewBox="0 0 512 512">
       <defs>
         <radialGradient id="starGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
@@ -110,7 +107,7 @@ export function getTypeIcon(type) {
         </radialGradient>
       </defs>
       <g fill="currentColor">
-        <path d="M256 48c-110.28 0-200 89.72-200 200s89.72 200 200 200 200-89.72 200-200S366.28 48 256 48zm0 360c-88.37 0-160-71.63-160-160S167.63 88 256 88s160 71.63 160 160-71.63 160-160 160z"/>
+        <path d="M256 48c-110.28 0-200 89.72-200 200s89.72 200 200 200 200-89.72 200-200S366.28 48 256 48zm0 400c-97.9 0-176-78.1-176-176 0-97.9 78.1-176 176-176 97.9 0 176 78.1 176 176 0 97.9-78.1 176-176 176z"/>
         <circle cx="256" cy="248" r="32"/>
         <circle cx="156" cy="248" r="16"/>
         <circle cx="356" cy="248" r="16"/>
@@ -120,6 +117,7 @@ export function getTypeIcon(type) {
       </g>
       <circle cx="256" cy="248" r="120" fill="none" stroke="currentColor" stroke-width="8" stroke-dasharray="16 8"/>
     </svg>`,
+    
     'Light': `<svg viewBox="0 0 512 512">
       <defs>
         <radialGradient id="lightGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
@@ -135,7 +133,7 @@ export function getTypeIcon(type) {
         </g>
         <circle cx="256" cy="256" r="96" fill="none" stroke="currentColor" stroke-width="16" opacity="0.3"/>
       </g>
-    </svg>`,
+    </svg>`
   };
   
   return icons[type] || `<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 96c-88.4 0-160 71.6-160 160s71.6 160 160 160 160-71.6 160-160S344.4 96 256 96z"/></svg>`;
@@ -164,11 +162,11 @@ export function getTypeColor(type) {
     'steel': '#AAAABB',
     'fairy': '#EE99EE',
     'plant': '#4CAF50',
-    'sky': '#87CEEB',  // Sky blue
-    'flora': '#98FB98', // Pale green
-    'elemental': '#DDA0DD', // Plum
-    'celestial': '#4B0082', // Deep indigo color for celestial type
-    'light': '#FFD700', // Bright golden yellow for light type
+    'sky': '#87CEEB',
+    'flora': '#98FB98', 
+    'elemental': '#DDA0DD',
+    'celestial': '#4B0082',
+    'light': '#FFD700'
   };
   
   return colors[type.toLowerCase()] || '#999999';
