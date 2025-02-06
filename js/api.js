@@ -52,7 +52,7 @@ export async function generateUserBasedCard(users) {
           `Title: ${project.title || 'Untitled'}, Description: ${project.description || 'No description available'}`
         ).join('\n')
       : "No recent projects available.";
-      
+      console.log(projectsContext)
     // Compose full context for the LLM using dynamic content.
     const userContext = `
 User Profile:
