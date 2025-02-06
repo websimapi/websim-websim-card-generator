@@ -1,4 +1,4 @@
-// Updated api.js with additional logging and improved project data extraction
+// Updated api.js with additional logging, recent projects logic and modified prompt
 
 export async function getFollowsData() {
   try {
@@ -37,29 +37,28 @@ export async function generateUserBasedCard(users) {
     // Select one random user from the provided list
     const randomUser = users[Math.floor(Math.random() * users.length)];
     console.log("Selected random user:", randomUser);
-
     // Fetch recent projects for the selected user
     const projectsResponse = await fetch(`/api/v1/users/${randomUser.username}/projects`);
     const projectsData = await projectsResponse.json();
     console.log("Fetched projectsData for user", randomUser.username, projectsData);
-
+    
     let recentProjects = [];
     if (projectsData && projectsData.projects) {
       if (Array.isArray(projectsData.projects)) {
-        recentProjects = projectsData.projects.slice(0, 2);
+        recentProjects = projectsData.projects.slice(0, 10);
       } else if (projectsData.projects.data && Array.isArray(projectsData.projects.data)) {
-        recentProjects = projectsData.projects.data.slice(0, 2);
+        recentProjects = projectsData.projects.data.slice(0, 10);
       } else if (typeof projectsData.projects === 'object') {
         const values = Object.values(projectsData.projects);
-        recentProjects = Array.isArray(values) ? values.slice(0, 2) : [];
+        recentProjects = Array.isArray(values) ? values.slice(0, 10) : [];
       } else {
         console.error("Unexpected format for projectsData.projects:", projectsData.projects);
       }
     } else {
       console.warn("No projects found for user", randomUser.username, projectsData);
     }
-
-    // Log details for each project to help debug missing title/description
+    
+    // Verbose logging for debugging project title and description
     recentProjects.forEach(project => {
       console.log(`Project Debug - ID: ${project.id}, Title: ${project.title}, Description: ${project.description}`);
       if (!project.title) {
@@ -70,7 +69,8 @@ export async function generateUserBasedCard(users) {
       }
     });
 
-    // Construct the projects context string using available metadata
+    // Construct the projects context string using available metadata.
+    // If description is "No description available", exclude it.
     const projectsContext = recentProjects.length > 0 
       ? recentProjects.map(project => {
           const title = project.title || 
@@ -80,26 +80,23 @@ export async function generateUserBasedCard(users) {
           const description = project.description || 
                               (project.site && project.site.description) || 
                               'No description available';
-          return `Title: ${title}, Description: ${description}`;
+          if (description.trim() === "No description available") {
+            return `Title: ${title}`;
+          } else {
+            return `Title: ${title}, Description: ${description}`;
+          }
         }).join('\n')
       : "No recent projects available.";
     console.log("Constructed projectsContext:", projectsContext);
 
-    // Compose the full user context with dynamic project details
-    const userContext = `
-User Profile:
-Username: ${randomUser.username}
-Description: ${randomUser.description || 'N/A'}
-Twitter: ${randomUser.twitter || 'None'}
-Discord: ${randomUser.discord_username || 'None'}
-
+    // Compose the user context with only the username and recent projects.
+    const userContext = `Username: ${randomUser.username}
 Recent Projects:
-${projectsContext}
-    `.trim();
+${projectsContext}`.trim();
     console.log("User Context for LLM:", userContext);
 
-    // Prepare the prompt to send dynamic context to the LLM
-    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
+    // Prepare the prompt to send dynamic context to the LLM.
+    const promptText = `Based on the following information, generate a creative card description that captures the essence of the community. Include a meaningful name derived from the user's characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the user's activities and recent projects.
 
 interface Response {
   name: string;
@@ -118,8 +115,9 @@ Example response (generate something completely different):
   "weight": "42kg"
 }
 
-User Context:
-${userContext}
+Username: ${randomUser.username}
+Recent Projects:
+${projectsContext}
     `;
     console.log("Sending prompt to AI_completion:", promptText);
 
