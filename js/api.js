@@ -100,7 +100,8 @@ ${projectsContext}
     console.log("User Context for LLM:", userContext);
 
     // Prepare the prompt to send dynamic context to the LLM
-    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
+    const promptText = `Based on these user profiles, generate a creative card description. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
+    ${userContext}
 
 interface Response {
   name: string;
