@@ -2,27 +2,38 @@
 
 export async function getFollowsData() {
   try {
-    // Get current user's followers and following data
+    // Get current user's followers data
     const followersResponse = await fetch('/api/v1/user/followers');
     const followersData = await followersResponse.json();
-
-    const followingResponse = await fetch('/api/v1/user/following'); 
-    const followingData = await followingResponse.json();
-
     const followers = (followersData.followers && Array.isArray(followersData.followers.data))
       ? followersData.followers.data.map(f => f.follow.user)
       : [];
+      
+    // Get current user's following data
+    const followingResponse = await fetch('/api/v1/user/following'); 
+    const followingData = await followingResponse.json();
     const following = (followingData.following && Array.isArray(followingData.following.data))
       ? followingData.following.data.map(f => f.follow.user)
       : [];
 
+    // Log both arrays for debugging purposes
+    console.log("Followers fetched:", followers);
+    console.log("Following fetched:", following);
+
+    // Combine both arrays
+    const allUsers = [...followers, ...following];
+
+    // Remove duplicates by username
     const userMap = new Map();
-    [...followers, ...following].forEach(user => {
+    allUsers.forEach(user => {
       if (user && user.username && !userMap.has(user.username)) {
         userMap.set(user.username, user);
       }
     });
-    return Array.from(userMap.values());
+    const allUniqueUsers = Array.from(userMap.values());
+    console.log("All unique users from followers and following:", allUniqueUsers);
+
+    return allUniqueUsers;
   } catch (error) {
     console.error('Error fetching follows data:', error);
     return [];
@@ -45,6 +56,7 @@ export async function generateUserBasedCard(users) {
 
     let recentProjects = [];
     if (projectsData && projectsData.projects) {
+      // Try different possible formats for projects data
       if (Array.isArray(projectsData.projects)) {
         recentProjects = projectsData.projects.slice(0, 10);
       } else if (projectsData.projects.data && Array.isArray(projectsData.projects.data)) {
@@ -59,7 +71,7 @@ export async function generateUserBasedCard(users) {
       console.warn("No projects found for user", randomUser.username, projectsData);
     }
 
-    // Log details for each project to help debug missing title/description
+    // Verbose logging for each project to help debug missing title/description
     recentProjects.forEach(project => {
       console.log(`Project Debug - ID: ${project.id}, Title: ${project.title}, Description: ${project.description}`);
       if (!project.title && project.site) {
@@ -75,18 +87,18 @@ export async function generateUserBasedCard(users) {
       ? recentProjects.map(project => {
           // Try alternative sources: project.site and project.project_revision if main title/description is null
           const title = project.title || 
-                        (project.site && project.site.title) || 
+                        (project.site && (project.site.title || project.site.prompt?.text)) || 
                         (project.project_revision && project.project_revision.title) || 
                         'Untitled';
           const description = project.description || 
-                              (project.site && project.site.description) || 
+                              (project.site && (project.site.description || project.site.prompt?.text)) || 
                               'No description available';
           return `Title: ${title}, Description: ${description}`;
         }).join('\n')
       : "No recent projects available.";
     console.log("Constructed projectsContext:", projectsContext);
 
-    // Compose the user context using the random user's profile and their recent projects context
+    // Compose the projectsContext for user context
     const userContext = `
 User Profile:
 Username: ${randomUser.username}
@@ -99,7 +111,7 @@ ${projectsContext}
     `.trim();
     console.log("User Context for LLM:", userContext);
 
-    // Prepare the prompt to send dynamic context to the LLM
+    // Prepare the promptText exactly as specified in the current context
     const promptText = `Based on these user profiles, generate a creative card description. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
     ${userContext}
 
