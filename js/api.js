@@ -1,4 +1,5 @@
-// Updated api.js with full fetching of all followers and following, verbose logging for debugging and ensuring full project metadata retrieval
+// Updated api.js with full fetching of all followers and following, verbose logging for debugging 
+// and ensuring full project metadata retrieval
 
 // Helper function to recursively fetch paginated data for followers or following
 async function fetchAllUsers(endpoint) {
@@ -140,9 +141,10 @@ ${projectsContext}
     `.trim();
     console.log("User Context for LLM:", userContext);
 
-    // Prepare the promptText exactly as specified in the current context
+    // Prepare the promptText exactly as specified in the current context.
+    // Change the example "type": "Augmented/TTS" to "type": "" and then explain to use the format TYPE/TYPE and create a type based on the context of the user.
     const promptText = `Based on these user profiles, generate a creative card description. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
-    ${userContext}
+${userContext}
 
 interface Response {
   name: string;
@@ -154,14 +156,14 @@ interface Response {
 
 Example response (generate something completely different):
 {
-  "name": "",
-  "description": "",
-  "type": "Augmented/TTS",
+  "name": "Luminous Nova",
+  "description": "A radiant entity that adapts its energy based on the creative spirit of its trainer. It embodies duality with its brilliant and mysterious hues, shifting fluidly between moments of calm and bursts of inspiration.",
+  "type": "",
   "height": "1.7m",
   "weight": "42kg"
 }
 
-Types, Description, and Name for example comes from user context
+Note for the "type" field: Use the format TYPE/TYPE. For example, if the user context suggests a dual nature such as energetic and serene, you might output something like "Energetic/Serene". The type should be created based on the context of the user.
 User Context:
 ${userContext}
     `;
