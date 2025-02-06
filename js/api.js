@@ -1,3 +1,4 @@
+// js/api.js
 export async function getFollowsData() {
   try {
     // Get current user's followers and following
@@ -7,15 +8,18 @@ export async function getFollowsData() {
     const followingResponse = await fetch('/api/v1/user/following'); 
     const followingData = await followingResponse.json();
 
-    // Combine and deduplicate users
-    const allUsers = new Set([
-      ...followersData.followers.data.map(f => f.follow.user),
-      ...followingData.following.data.map(f => f.follow.user)
-    ]);
-
-    // Convert to array and remove nulls
-    const users = Array.from(allUsers).filter(user => user);
-    return users;
+    // Combine and deduplicate users using their IDs
+    const usersMap = new Map();
+    (followersData.followers.data || []).forEach(f => {
+      const user = f.follow.user;
+      if (user) usersMap.set(user.id, user);
+    });
+    (followingData.following.data || []).forEach(f => {
+      const user = f.follow.user;
+      if (user) usersMap.set(user.id, user);
+    });
+    
+    return Array.from(usersMap.values());
   } catch (error) {
     console.error('Error fetching follows data:', error);
     return [];
@@ -27,33 +31,37 @@ export async function generateUserBasedCard(users) {
     if (!users || users.length === 0) {
       throw new Error("No follower or following users available");
     }
-    // Select one random user from the followers/following list
+    // Pick a random user from the followers/following list
     const randomUser = users[Math.floor(Math.random() * users.length)];
     
     // Fetch recent projects for the selected user
     const projectsResponse = await fetch(`/api/v1/users/${randomUser.username}/projects`);
     const projectsData = await projectsResponse.json();
-    
-    // projectsData might not be an array directly; check and convert accordingly.
+
+    // Normalize the fetched projects into an array
     let recentProjects = [];
-    if (projectsData && Array.isArray(projectsData.projects)) {
-      recentProjects = projectsData.projects.slice(0, 2);
-    } else if (projectsData && projectsData.projects && typeof projectsData.projects === 'object') {
-      // In case projects is an object, take its values.
-      recentProjects = Object.values(projectsData.projects).slice(0, 2);
-    } else if (projectsData && Array.isArray(projectsData)) {
-      // Fallback if response is an array itself.
-      recentProjects = projectsData.slice(0, 2);
+    if (projectsData.projects) {
+      // In case projects is an array use it directly, otherwise get values.
+      if (Array.isArray(projectsData.projects)) {
+        recentProjects = projectsData.projects;
+      } else {
+        recentProjects = Object.values(projectsData.projects);
+      }
     }
-    
-    // Build the recent projects context string.
+    // Take up to 2 recent projects
+    recentProjects = recentProjects.slice(0, 2);
+
+    // Build the recent projects context string using title and description.
     const projectsContext = recentProjects.length > 0 
-      ? recentProjects.map(project =>
-          `Title: ${project.title || 'Untitled'}, Description: ${project.description || 'No description available'}`
-        ).join('\n')
+      ? recentProjects.map(project => {
+          // Ensure title and description are grabbed correctly
+          const title = project.title || 'Untitled Page';
+          const description = project.description || 'No description available';
+          return `Title: ${title}, Description: ${description}`;
+        }).join('\n')
       : "No recent projects available.";
-      console.log(projectsContext)
-    // Compose full context for the LLM using dynamic content.
+
+    // Compose user context with dynamic details and recent projects from the random selection
     const userContext = `
 User Profile:
 Username: ${randomUser.username}
@@ -65,7 +73,7 @@ Recent Projects:
 ${projectsContext}
     `.trim();
 
-    // Send user data to LLM to generate card description
+    // Send user context data to the LLM to generate a card
     const response = await fetch('/api/ai_completion', {
       method: 'POST',
       headers: {
@@ -73,8 +81,8 @@ ${projectsContext}
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `Based on the following user profile context, generate a creative card description that captures the essence of the community. 
-Include a meaningful name derived from the user's characteristics, a type (which may combine elemental and personality traits), height, weight, and a rich description of imagined abilities and traits inspired by the user's recent projects and activities.
+        prompt: `Based on these user profiles, generate a creative card description that captures the essence of the community.
+Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities.
 
 interface Response {
   name: string;
@@ -87,7 +95,7 @@ interface Response {
 Example response (generate something completely different):
 {
   "name": "Creativox",
-  "description": "A rare community spirit formed from the collective creativity of digital innovators. Its presence inspires waves of collaboration with sparks of genius in every project.",
+  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovative energy and leaves behind a legacy of collaboration.",
   "type": "Light/Celestial",
   "height": "1.7m",
   "weight": "42kg"
