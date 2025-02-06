@@ -25,7 +25,17 @@ export async function getFollowsData() {
 
 export async function generateUserBasedCard(users) {
   try {
-    // Send user data to LLM to generate card description
+    // Get random users to feature
+    const selectedUsers = users.sort(() => 0.5 - Math.random()).slice(0, 3);
+    
+    // Create context string from user data
+    const userContext = selectedUsers.map(user => `
+      Username: ${user.username}
+      Description: ${user.description || 'A mysterious creator'}
+      Twitter: ${user.twitter || 'None'}
+      Discord: ${user.discord_username || 'None'}
+    `).join('\n\n');
+
     const response = await fetch('/api/ai_completion', {
       method: 'POST',
       headers: {
@@ -33,25 +43,29 @@ export async function generateUserBasedCard(users) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities.
+        prompt: `You are a community spirit card generator. Analyze these community members and create a spirit card that represents their collective energy and creative traits:
 
-        interface Response {
-          name: string;
-          description: string;
-          type: string;
-          height: string;
-          weight: string;
-        }
+${userContext}
 
-        Example response (generate something completely different):
-        {
-          "name": "Creativox",
-          "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative energy in its wake.",
-          "type": "Light/Celestial",
-          "height": "1.7m",
-          "weight": "42kg"
-        }`,
-        data: JSON.stringify(users)
+Create a completely unique community spirit card based on the essence and patterns you observe in these members' traits and activities. The card should feel mystical and interconnected with the community's creative energy.
+
+interface Response {
+  name: string;
+  description: string;
+  type: string;
+  height: string;
+  weight: string;
+}
+
+Example response (generate something completely different):
+{
+  "name": "Creativox",
+  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative energy in its wake.",
+  "type": "Light/Celestial", 
+  "height": "1.7m",
+  "weight": "42kg"
+}`,
+        data: userContext
       }),
     });
     
