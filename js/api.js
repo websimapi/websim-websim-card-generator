@@ -38,7 +38,7 @@ export async function generateUserBasedCard(users) {
     const randomUser = users[Math.floor(Math.random() * users.length)];
     console.log("Selected random user:", randomUser);
 
-    // Fetch recent projects for the selected user
+    // Fetch recent projects for the selected user; get up to 10 latest projects
     const projectsResponse = await fetch(`/api/v1/users/${randomUser.username}/projects`);
     const projectsData = await projectsResponse.json();
     console.log("Fetched projectsData for user", randomUser.username, projectsData);
@@ -46,12 +46,12 @@ export async function generateUserBasedCard(users) {
     let recentProjects = [];
     if (projectsData && projectsData.projects) {
       if (Array.isArray(projectsData.projects)) {
-        recentProjects = projectsData.projects.slice(0, 2);
+        recentProjects = projectsData.projects.slice(0, 10);
       } else if (projectsData.projects.data && Array.isArray(projectsData.projects.data)) {
-        recentProjects = projectsData.projects.data.slice(0, 2);
+        recentProjects = projectsData.projects.data.slice(0, 10);
       } else if (typeof projectsData.projects === 'object') {
         const values = Object.values(projectsData.projects);
-        recentProjects = Array.isArray(values) ? values.slice(0, 2) : [];
+        recentProjects = Array.isArray(values) ? values.slice(0, 10) : [];
       } else {
         console.error("Unexpected format for projectsData.projects:", projectsData.projects);
       }
@@ -62,17 +62,18 @@ export async function generateUserBasedCard(users) {
     // Log details for each project to help debug missing title/description
     recentProjects.forEach(project => {
       console.log(`Project Debug - ID: ${project.id}, Title: ${project.title}, Description: ${project.description}`);
-      if (!project.title) {
-        console.warn(`Project ${project.id} is missing title. Checking site metadata...`, project.site);
+      if (!project.title && project.site) {
+        console.warn(`Project ${project.id} is missing title. Attempting to fetch from site: `, project.site);
       }
-      if (!project.description) {
-        console.warn(`Project ${project.id} is missing description. Checking site metadata...`, project.site);
+      if (!project.description && project.site) {
+        console.warn(`Project ${project.id} is missing description. Attempting to fetch from site: `, project.site);
       }
     });
 
-    // Construct the projects context string using available metadata
+    // Construct the projects context string using available metadata (up to 10 projects)
     const projectsContext = recentProjects.length > 0 
       ? recentProjects.map(project => {
+          // Try alternative sources: project.site and project.project_revision if main title/description is null
           const title = project.title || 
                         (project.site && project.site.title) || 
                         (project.project_revision && project.project_revision.title) || 
@@ -85,7 +86,7 @@ export async function generateUserBasedCard(users) {
       : "No recent projects available.";
     console.log("Constructed projectsContext:", projectsContext);
 
-    // Compose the full user context with dynamic project details
+    // Compose the user context using the random user's profile and their recent projects context
     const userContext = `
 User Profile:
 Username: ${randomUser.username}
@@ -99,7 +100,7 @@ ${projectsContext}
     console.log("User Context for LLM:", userContext);
 
     // Prepare the prompt to send dynamic context to the LLM
-    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
+    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
 
 interface Response {
   name: string;
@@ -111,19 +112,17 @@ interface Response {
 
 Example response (generate something completely different):
 {
-  "name": "",
-  "description": "",
-  "type": "Augmented/TTS",
+  "name": "Creativox",
+  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative energy in its wake.",
+  "type": "Light/Celestial",
   "height": "1.7m",
   "weight": "42kg"
 }
 
-Types, Description, and Name for example comes from user context
-
 User Context:
 ${userContext}
     `;
-    console.log("Sending prompt to AI_completion:", promptText);
+    console.log("Sending prompt to LLM:", promptText);
 
     const response = await fetch('/api/ai_completion', {
       method: 'POST',
