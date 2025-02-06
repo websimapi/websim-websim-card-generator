@@ -60,7 +60,7 @@ export async function generateUserBasedCard(users) {
           return `Title: ${title}, Description: ${description}`;
         }).join('\n')
       : "No recent projects available.";
-
+console.log(projectsContext)
     // Compose user context with dynamic details and recent projects from the random selection
     const userContext = `
 User Profile:
