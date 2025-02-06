@@ -155,14 +155,16 @@ interface Response {
 
 Example response (generate something completely different based on the project titles and descriptions):
 {
-  "name": "Luminous Nova",
-  "description": "A radiant entity born from the confluence of groundbreaking project titles, embodying the creative spirit of its trainer. It reflects the energy of 'Project Sunrise' and the mystique of 'Moonlight Sonata', blending these inspirations into a dynamic force.",
+  "name": "",
+  "description": "",
   "type": "",
   "height": "1.7m",
   "weight": "42kg"
 }
 
 Note for the "type" field: Use the format TYPE/TYPE and create a type based on the context of the user derived from their project titles and descriptions.
+
+for name and description field suse title and descriptions from projects
 User Context:
 ${userContext}
     `;
