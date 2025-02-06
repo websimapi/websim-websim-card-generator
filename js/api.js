@@ -1,25 +1,27 @@
-// js/api.js
 export async function getFollowsData() {
   try {
     // Get current user's followers and following
     const followersResponse = await fetch('/api/v1/user/followers');
     const followersData = await followersResponse.json();
-    
+
     const followingResponse = await fetch('/api/v1/user/following'); 
     const followingData = await followingResponse.json();
 
-    // Combine and deduplicate users using their IDs
-    const usersMap = new Map();
-    (followersData.followers.data || []).forEach(f => {
-      const user = f.follow.user;
-      if (user) usersMap.set(user.id, user);
+    // Combine and deduplicate users (assuming unique user IDs)
+    const followers = (followersData.followers && Array.isArray(followersData.followers.data))
+      ? followersData.followers.data.map(f => f.follow.user)
+      : [];
+    const following = (followingData.following && Array.isArray(followingData.following.data))
+      ? followingData.following.data.map(f => f.follow.user)
+      : [];
+
+    const userMap = new Map();
+    [...followers, ...following].forEach(user => {
+      if (user && user.username && !userMap.has(user.username)) {
+        userMap.set(user.username, user);
+      }
     });
-    (followingData.following.data || []).forEach(f => {
-      const user = f.follow.user;
-      if (user) usersMap.set(user.id, user);
-    });
-    
-    return Array.from(usersMap.values());
+    return Array.from(userMap.values());
   } catch (error) {
     console.error('Error fetching follows data:', error);
     return [];
@@ -31,37 +33,37 @@ export async function generateUserBasedCard(users) {
     if (!users || users.length === 0) {
       throw new Error("No follower or following users available");
     }
-    // Pick a random user from the followers/following list
+    // Select one random user from the provided users list
     const randomUser = users[Math.floor(Math.random() * users.length)];
-    
+
     // Fetch recent projects for the selected user
     const projectsResponse = await fetch(`/api/v1/users/${randomUser.username}/projects`);
     const projectsData = await projectsResponse.json();
 
-    // Normalize the fetched projects into an array
+    // Try to extract projects array from various possible structures
     let recentProjects = [];
     if (projectsData.projects) {
-      // In case projects is an array use it directly, otherwise get values.
       if (Array.isArray(projectsData.projects)) {
-        recentProjects = projectsData.projects;
+        recentProjects = projectsData.projects.slice(0, 2);
+      } else if (projectsData.projects.data && Array.isArray(projectsData.projects.data)) {
+        recentProjects = projectsData.projects.data.slice(0, 2);
       } else {
-        recentProjects = Object.values(projectsData.projects);
+        // If projects is an object with keys, take its values
+        recentProjects = Object.values(projectsData.projects).slice(0, 2);
       }
     }
-    // Take up to 2 recent projects
-    recentProjects = recentProjects.slice(0, 2);
 
-    // Build the recent projects context string using title and description.
+    // Build the recent projects context string including project title and description
     const projectsContext = recentProjects.length > 0 
       ? recentProjects.map(project => {
-          // Ensure title and description are grabbed correctly
-          const title = project.title || 'Untitled Page';
-          const description = project.description || 'No description available';
+          // Check metadata: if project has site data then also include project title and description from its metadata
+          const title = project.title || (project.site && project.site.title) || 'Untitled';
+          const description = project.description || (project.site && project.site.description) || 'No description available';
           return `Title: ${title}, Description: ${description}`;
         }).join('\n')
       : "No recent projects available.";
-console.log(projectsContext)
-    // Compose user context with dynamic details and recent projects from the random selection
+
+    // Compose the prompt context using dynamic data from the selected user and their projects
     const userContext = `
 User Profile:
 Username: ${randomUser.username}
@@ -73,7 +75,7 @@ Recent Projects:
 ${projectsContext}
     `.trim();
 
-    // Send user context data to the LLM to generate a card
+    // Send dynamic user data to LLM to generate a card description
     const response = await fetch('/api/ai_completion', {
       method: 'POST',
       headers: {
@@ -81,8 +83,7 @@ ${projectsContext}
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `Based on these user profiles, generate a creative card description that captures the essence of the community.
-Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities.
+        prompt: `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type that is a combination of elemental and personality traits, height, weight, and a rich description of imagined abilities and traits inspired by the selected user's activities and recent projects.
 
 interface Response {
   name: string;
@@ -95,7 +96,7 @@ interface Response {
 Example response (generate something completely different):
 {
   "name": "Creativox",
-  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovative energy and leaves behind a legacy of collaboration.",
+  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative energy in its wake.",
   "type": "Light/Celestial",
   "height": "1.7m",
   "weight": "42kg"
@@ -107,7 +108,7 @@ ${userContext}
         data: JSON.stringify(randomUser)
       }),
     });
-    
+
     const data = await response.json();
     return data;  // Expecting an object matching the Response interface
   } catch (error) {
@@ -131,7 +132,7 @@ export async function generateCardImage(description) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        prompt: `Generate a unique image URL for an abstract representation based on this description: "${description}". The image should symbolize community spirit and user traits rather than traditional characters. Return a URL to an image that matches the description.
+        prompt: `Generate a unique image URL for an abstract representation based on this description: "${description}". The image should symbolize community spirit and the dynamic essence of digital creators rather than traditional characters. Return a URL to an image that matches the description.
 
 interface Response {
   imageUrl: string;
