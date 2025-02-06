@@ -100,7 +100,7 @@ ${projectsContext}
     console.log("User Context for LLM:", userContext);
 
     // Prepare the prompt to send dynamic context to the LLM
-    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
+    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
 
 interface Response {
   name: string;
@@ -112,13 +112,14 @@ interface Response {
 
 Example response (generate something completely different):
 {
-  "name": "Creativox",
-  "description": "A rare community spirit formed from the collective creativity of digital artists and makers. Its presence inspires waves of innovation, leaving trails of collaborative energy in its wake.",
-  "type": "Light/Celestial",
+  "name": "",
+  "description": "",
+  "type": "Augmented/TTS",
   "height": "1.7m",
   "weight": "42kg"
 }
 
+Types, Description, and Name for example comes from user context
 User Context:
 ${userContext}
     `;
