@@ -1,13 +1,14 @@
+// Updated api.js with additional logging and improved project data extraction
+
 export async function getFollowsData() {
   try {
-    // Get current user's followers and following
+    // Get current user's followers and following data
     const followersResponse = await fetch('/api/v1/user/followers');
     const followersData = await followersResponse.json();
 
     const followingResponse = await fetch('/api/v1/user/following'); 
     const followingData = await followingResponse.json();
 
-    // Combine and deduplicate users (assuming unique user IDs)
     const followers = (followersData.followers && Array.isArray(followersData.followers.data))
       ? followersData.followers.data.map(f => f.follow.user)
       : [];
@@ -33,37 +34,58 @@ export async function generateUserBasedCard(users) {
     if (!users || users.length === 0) {
       throw new Error("No follower or following users available");
     }
-    // Select one random user from the provided users list
+    // Select one random user from the provided list
     const randomUser = users[Math.floor(Math.random() * users.length)];
+    console.log("Selected random user:", randomUser);
 
     // Fetch recent projects for the selected user
     const projectsResponse = await fetch(`/api/v1/users/${randomUser.username}/projects`);
     const projectsData = await projectsResponse.json();
+    console.log("Fetched projectsData for user", randomUser.username, projectsData);
 
-    // Try to extract projects array from various possible structures
     let recentProjects = [];
-    if (projectsData.projects) {
+    if (projectsData && projectsData.projects) {
       if (Array.isArray(projectsData.projects)) {
         recentProjects = projectsData.projects.slice(0, 2);
       } else if (projectsData.projects.data && Array.isArray(projectsData.projects.data)) {
         recentProjects = projectsData.projects.data.slice(0, 2);
+      } else if (typeof projectsData.projects === 'object') {
+        const values = Object.values(projectsData.projects);
+        recentProjects = Array.isArray(values) ? values.slice(0, 2) : [];
       } else {
-        // If projects is an object with keys, take its values
-        recentProjects = Object.values(projectsData.projects).slice(0, 2);
+        console.error("Unexpected format for projectsData.projects:", projectsData.projects);
       }
+    } else {
+      console.warn("No projects found for user", randomUser.username, projectsData);
     }
 
-    // Build the recent projects context string including project title and description
+    // Log details for each project to help debug missing title/description
+    recentProjects.forEach(project => {
+      console.log(`Project Debug - ID: ${project.id}, Title: ${project.title}, Description: ${project.description}`);
+      if (!project.title) {
+        console.warn(`Project ${project.id} is missing title. Checking site metadata...`, project.site);
+      }
+      if (!project.description) {
+        console.warn(`Project ${project.id} is missing description. Checking site metadata...`, project.site);
+      }
+    });
+
+    // Construct the projects context string using available metadata
     const projectsContext = recentProjects.length > 0 
       ? recentProjects.map(project => {
-          // Check metadata: if project has site data then also include project title and description from its metadata
-          const title = project.title || (project.site && project.site.title) || 'Untitled';
-          const description = project.description || (project.site && project.site.description) || 'No description available';
+          const title = project.title || 
+                        (project.site && project.site.title) || 
+                        (project.project_revision && project.project_revision.title) || 
+                        'Untitled';
+          const description = project.description || 
+                              (project.site && project.site.description) || 
+                              'No description available';
           return `Title: ${title}, Description: ${description}`;
         }).join('\n')
       : "No recent projects available.";
-console.log(projectsContext);
-    // Compose the prompt context using dynamic data from the selected user and their projects
+    console.log("Constructed projectsContext:", projectsContext);
+
+    // Compose the full user context with dynamic project details
     const userContext = `
 User Profile:
 Username: ${randomUser.username}
@@ -74,16 +96,10 @@ Discord: ${randomUser.discord_username || 'None'}
 Recent Projects:
 ${projectsContext}
     `.trim();
+    console.log("User Context for LLM:", userContext);
 
-    // Send dynamic user data to LLM to generate a card description
-    const response = await fetch('/api/ai_completion', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type that is a combination of elemental and personality traits, height, weight, and a rich description of imagined abilities and traits inspired by the selected user's activities and recent projects.
+    // Prepare the prompt to send dynamic context to the LLM
+    const promptText = `Based on these user profiles, generate a creative card description that captures the essence of the community. Include a meaningful name derived from user characteristics, a type (elemental/personality based), height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
 
 interface Response {
   name: string;
@@ -104,13 +120,24 @@ Example response (generate something completely different):
 
 User Context:
 ${userContext}
-        `,
-        data: JSON.stringify(randomUser)
+    `;
+    console.log("Sending prompt to AI_completion:", promptText);
+
+    const response = await fetch('/api/ai_completion', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: promptText,
+        data: JSON.stringify(users)
       }),
     });
 
     const data = await response.json();
-    return data;  // Expecting an object matching the Response interface
+    console.log("LLM returned data:", data);
+    return data;  // Expected to match the Response interface
   } catch (error) {
     console.error('Error generating user-based card:', error);
     return {

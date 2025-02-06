@@ -1,4 +1,5 @@
-export function showToast(message, isError = false) {
+export function showToast(message, options = {}) {
+  const { isError = false } = options;
   const toast = document.createElement('div');
   toast.className = `toast ${isError ? 'error' : 'success'}`;
   toast.textContent = message;
