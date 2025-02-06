@@ -34,6 +34,7 @@ async function fetchAllUsers(endpoint) {
       break;
     }
   }
+  console.log(`Total users fetched from ${endpoint}: ${allUsers.length}`);
   return allUsers;
 }
 
@@ -84,7 +85,6 @@ export async function generateUserBasedCard(users) {
 
     let recentProjects = [];
     if (projectsData && projectsData.projects) {
-      // Try different possible formats for projects data
       if (Array.isArray(projectsData.projects)) {
         recentProjects = projectsData.projects.slice(0, 10);
       } else if (projectsData.projects.data && Array.isArray(projectsData.projects.data)) {
@@ -101,34 +101,33 @@ export async function generateUserBasedCard(users) {
       console.warn("No projects found for user", randomUser.username, projectsData);
     }
     
-    // Verbose logging for each project to help debug missing title/description
-    recentProjects.forEach(project => {
-      console.log(`Project Debug - ID: ${project.id}, Title: ${project.title}, Description: ${project.description}`);
-      if (!project.title && project.site) {
-        console.warn(`Project ${project.id} is missing title. Attempting to fetch from site: `, project.site);
+    // Log each project's title and description to debug null values
+    recentProjects.forEach((project, index) => {
+      console.log(`Project ${index + 1} - ID: ${project.id}, Title: ${project.title}, Description: ${project.description}`);
+      if (!project.title) {
+        console.warn(`Project ${project.id} has null title. Project data:`, project);
       }
-      if (!project.description && project.site) {
-        console.warn(`Project ${project.id} is missing description. Attempting to fetch from site: `, project.site);
+      if (!project.description) {
+        console.warn(`Project ${project.id} has null description. Project data:`, project);
       }
     });
 
     // Construct the projects context string using available metadata (up to 10 projects)
     const projectsContext = recentProjects.length > 0 
       ? recentProjects.map(project => {
-          // Try alternative sources: project.site and project.project_revision if main title/description is null
-          const title = project.title || 
-                        (project.site && (project.site.title || (project.site.prompt && project.site.prompt.text))) || 
-                        (project.project_revision && project.project_revision.title) || 
+          const title = project.title ||
+                        (project.site && (project.site.title || (project.site.prompt && project.site.prompt.text))) ||
+                        (project.project_revision && project.project_revision.title) ||
                         'Untitled';
-          const description = project.description || 
-                              (project.site && (project.site.description || (project.site.prompt && project.site.prompt.text))) || 
+          const description = project.description ||
+                              (project.site && (project.site.description || (project.site.prompt && project.site.prompt.text))) ||
                               'No description available';
           return `Title: ${title}, Description: ${description}`;
         }).join('\n')
       : "No recent projects available.";
     console.log("Constructed projectsContext:", projectsContext);
 
-    // Compose the projectsContext for user context
+    // Compose detailed user context from selected user's profile and recent projects
     const userContext = `
 User Profile:
 Username: ${randomUser.username}
@@ -142,8 +141,8 @@ ${projectsContext}
     console.log("User Context for LLM:", userContext);
 
     // Prepare the promptText exactly as specified in the current context.
-    // Change the example "type": "Augmented/TTS" to "type": "" and then explain to use the format TYPE/TYPE and create a type based on the context of the user.
-    const promptText = `Based on these user profiles, generate a creative card description. Include a meaningful name derived from user characteristics, a type, height, weight, and a rich description of imagined abilities and traits inspired by the users' activities and recent projects.
+    // Note: the type field is left empty and below explains to use the format TYPE/TYPE based on user context.
+    const promptText = `Based on these user profiles, generate a creative card description. Include a meaningful name derived from the titles of recent projects (the project titles and descriptions should be used to generate the name and the detailed description), a type, height, weight, and a rich description of imagined abilities and traits inspired by the user's activities and recent projects.
 ${userContext}
 
 interface Response {
@@ -154,16 +153,16 @@ interface Response {
   weight: string;
 }
 
-Example response (generate something completely different):
+Example response (generate something completely different based on the project titles and descriptions):
 {
   "name": "Luminous Nova",
-  "description": "A radiant entity that adapts its energy based on the creative spirit of its trainer. It embodies duality with its brilliant and mysterious hues, shifting fluidly between moments of calm and bursts of inspiration.",
+  "description": "A radiant entity born from the confluence of groundbreaking project titles, embodying the creative spirit of its trainer. It reflects the energy of 'Project Sunrise' and the mystique of 'Moonlight Sonata', blending these inspirations into a dynamic force.",
   "type": "",
   "height": "1.7m",
   "weight": "42kg"
 }
 
-Note for the "type" field: Use the format TYPE/TYPE. For example, if the user context suggests a dual nature such as energetic and serene, you might output something like "Energetic/Serene". The type should be created based on the context of the user.
+Note for the "type" field: Use the format TYPE/TYPE and create a type based on the context of the user derived from their project titles and descriptions.
 User Context:
 ${userContext}
     `;
