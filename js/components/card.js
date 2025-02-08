@@ -48,15 +48,16 @@ export async function loadCardToMain(cardData) {
   const cardInner = document.createElement('div');
   cardInner.className = 'card-inner flipped';
   
-  // Get type colors for gradient
+  // Get type colors for gradient (this is still computed for stats and type icons)
   const types = cardData.type.split('/');
   const primaryType = types[0].toLowerCase().trim();
   const secondaryType = types[1] ? types[1].toLowerCase().trim() : primaryType;
   const primaryColor = getTypeColor(primaryType);
   const secondaryColor = getTypeColor(secondaryType);
   
+  // Instead of a gradient background, set the card front background image to the provided VariantDark1.png icon
   cardInner.innerHTML = `
-    <div class="card-front" style="background: linear-gradient(135deg, ${primaryColor}26, ${secondaryColor}26 70%)">
+    <div class="card-front" style="background: url('VariantDark1.png') no-repeat center/cover;">
       <h2 class="pokemon-name">${cardData.name}</h2>
       <div class="card-image-container">
         <img class="pokemon-image" src="${cardData.imageUrl}" alt="${cardData.description}">
