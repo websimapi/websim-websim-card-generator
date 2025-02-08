@@ -9,8 +9,8 @@ export function handleHover(e) {
   const centerX = rect.width / 2;
   const centerY = rect.height / 2;
   
-  const rotateX = (y - centerY) / 20;
-  const rotateY = -(x - centerX) / 20;
+  const rotateX = (y - centerY) / 20; // Reduced intensity
+  const rotateY = -(x - centerX) / 20; // Reduced intensity
   
   card.style.transform = `
     perspective(2000px) 
@@ -24,6 +24,8 @@ export function resetHover(e) {
   const card = e.currentTarget;
   card.style.transform = 'perspective(2000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
   card.style.transition = 'transform 0.5s ease';
+  
+  // Remove transition after it's complete
   setTimeout(() => {
     card.style.transition = '';
   }, 500);
@@ -46,10 +48,15 @@ export async function loadCardToMain(cardData) {
   const cardInner = document.createElement('div');
   cardInner.className = 'card-inner flipped';
   
-  // Split type information (used for potential debugging)
+  // Get type colors for gradient
   const types = cardData.type.split('/');
+  const primaryType = types[0].toLowerCase().trim();
+  const secondaryType = types[1] ? types[1].toLowerCase().trim() : primaryType;
+  const primaryColor = getTypeColor(primaryType);
+  const secondaryColor = getTypeColor(secondaryType);
+  
   cardInner.innerHTML = `
-    <div class="card-front">
+    <div class="card-front" style="background: linear-gradient(135deg, ${primaryColor}26, ${secondaryColor}26 70%)">
       <h2 class="pokemon-name">${cardData.name}</h2>
       <div class="card-image-container">
         <img class="pokemon-image" src="${cardData.imageUrl}" alt="${cardData.description}">
@@ -83,7 +90,7 @@ export async function loadCardToMain(cardData) {
   card.appendChild(cardInner);
   cardContainer.appendChild(card);
 
-  // Create submenu for detailed information
+  // Create submenu
   const submenu = document.createElement('div');
   submenu.className = 'submenu hidden';
   
@@ -114,19 +121,16 @@ export async function loadCardToMain(cardData) {
   
   cardContainer.appendChild(submenu);
   
-  // Override the card's front background with the provided image icon instead of a gradient
-  const cardFront = card.querySelector('.card-front');
-  cardFront.style.background = "url('/VariantDark1.png') no-repeat center center / cover";
-  
   // Add hover effect
   card.addEventListener('mousemove', handleHover);
   card.addEventListener('mouseleave', resetHover);
   
-  // Add click handler to toggle flip and submenu visibility
+  // Add click handler with submenu toggle and auto-flip after mounting
   card.addEventListener('click', (e) => {
     const cardInner = card.querySelector('.card-inner');
     cardInner.classList.toggle('flipped');
     
+    // Show/hide submenu based on card flip state
     if (!cardInner.classList.contains('flipped')) {
       setTimeout(() => {
         submenu.classList.remove('hidden');
@@ -136,7 +140,7 @@ export async function loadCardToMain(cardData) {
     }
   });
 
-  // Auto flip the card after a short delay to reveal submenu
+  // Auto flip the card after a short delay
   setTimeout(() => {
     const cardInner = card.querySelector('.card-inner');
     cardInner.classList.remove('flipped');

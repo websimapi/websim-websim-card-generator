@@ -49,10 +49,11 @@ export async function generateCard() {
   
   card.appendChild(cardInner);
   
-  // Create submenu with placeholder data
+  // Create submenu but start hidden
   const submenu = document.createElement('div');
   submenu.className = 'submenu hidden';
   
+  // Create submenu content with placeholder data
   submenu.innerHTML = `
     <div class="submenu-grid">
       <div class="stat-box">
@@ -84,7 +85,7 @@ export async function generateCard() {
   const users = await getFollowsData();
   const cardData = await generateUserBasedCard(users);
 
-  // Update submenu content
+  // Update submenu content but keep it hidden
   const statValues = submenu.querySelectorAll('.stat-value');
   statValues[0].textContent = cardData.name;
   statValues[1].textContent = cardData.type;
@@ -96,7 +97,7 @@ export async function generateCard() {
   // Generate image based on description
   const imageUrl = await generateCardImage(`${cardData.description} - ${cardData.name} community card`);
 
-  // Create new card data object
+  // Create the cardData object early
   const newCardData = {
     name: cardData.name,
     description: cardData.description,
@@ -109,28 +110,36 @@ export async function generateCard() {
   // Handle image creation and loading
   if (imageUrl) {
     const cardImage = document.createElement('img');
-    cardImage.id = `card-${Date.now()}`;
-    cardImage.className = 'pokemon-image hidden';
+    cardImage.id = `card-${Date.now()}`; // Unique ID
+    cardImage.className = 'pokemon-image hidden'; // Add hidden class initially
     cardImage.src = imageUrl;
     cardImage.alt = `${cardData.name} - ${cardData.description}`;
     
+    // Add load and error event listeners
     cardImage.addEventListener('load', async function() {
       const actualSrc = this.currentSrc || this.src;
+      // Only show and save if the source isn't our placeholder string
       if (!actualSrc.includes('cartoon')) {
         this.classList.remove('hidden');
         
         try {
+          // First fetch the image and convert it to a File object
           const response = await fetch(actualSrc);
           const blob = await response.blob();
           const file = new File([blob], `${cardData.name}.png`, { type: 'image/png' });
+          
+          // Upload image to websim storage
           const backupImageUrl = await websim.upload(file);
           
+          // Update the cardData with both URLs
           newCardData.imageUrl = actualSrc;
           newCardData.backupImageUrl = backupImageUrl;
           
+          // Save the card with both URLs
           await saveCard(newCardData);
         } catch (error) {
           console.error('Error creating backup image:', error);
+          // Still save the card even if backup fails
           newCardData.imageUrl = actualSrc;
           await saveCard(newCardData);
         }
@@ -163,6 +172,19 @@ export async function generateCard() {
   const typeWrapper = statsContainer.querySelector('.type-wrapper');
   typeIcons.forEach(icon => typeWrapper.appendChild(icon));
 
+  // Add the gradient classes based on both types
+  const primaryType = types[0].toLowerCase().trim();
+  const secondaryType = types[1] ? types[1].toLowerCase().trim() : primaryType;
+  const cardFront = card.querySelector('.card-front');
+  
+  // Remove any existing gradient classes
+  cardFront.className = 'card-front';
+  
+  // Create custom gradient style
+  const primaryColor = getTypeColor(primaryType);
+  const secondaryColor = getTypeColor(secondaryType);
+  cardFront.style.background = `linear-gradient(135deg, ${primaryColor}26, ${secondaryColor}26 70%)`;
+
   const statsElement = statsContainer.querySelector('.pokemon-stats');
   statsElement.textContent = `${cardData.height} | ${cardData.weight}`;
   
@@ -171,19 +193,16 @@ export async function generateCard() {
   
   cardContainer.appendChild(card);
 
-  // Override card front background with provided image icon
-  const cardFront = card.querySelector('.card-front');
-  cardFront.style.background = "url('/VariantDark1.png') no-repeat center center / cover";
-  
   // Add click handler with submenu toggle
   card.addEventListener('click', (e) => {
-    const cardInner = card.querySelector('.card-inner');
+    const cardInner = e.currentTarget.querySelector('.card-inner');
     cardInner.classList.toggle('flipped');
     
+    // Show/hide submenu based on card flip state
     if (!cardInner.classList.contains('flipped')) {
       setTimeout(() => {
         submenu.classList.remove('hidden');
-      }, 400);
+      }, 400); // Half the flip animation duration
     } else {
       submenu.classList.add('hidden');
     }
